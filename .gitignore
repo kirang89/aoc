@@ -1,0 +1,21 @@
+# Mac
+.DS_Store
+
+# Editor Things
+.vscode
+.idea
+*~
+.#*
+.*.sw[a-z]
+
+# Packages
+*.dmg
+*.gz
+*.jar
+*.tar
+*.zip
+
+# Logs and Database Things
+*.log
+*.sql
+*.sqlite
