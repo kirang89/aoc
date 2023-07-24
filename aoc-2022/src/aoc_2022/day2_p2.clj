@@ -35,9 +35,7 @@
 
 (defn load-rounds [file]
   (->> file
-       io/resource
-       slurp
-       str/split-lines
+       aoc-2022.core/load-input
        (map (fn [l] (str/split l #" ")))))
 
 (defn find-move [opponent-move round-outcome]
