@@ -44,11 +44,19 @@ let location_pair_list lines =
 
 let print_list list = List.iter (fun x -> Printf.printf "%d\n" x) list
 
+let list_freq elem list =
+  list |> List.filter (fun x -> x == elem) |> List.length
+
+let dot_product list1 list2 =
+  List.fold_left2 (fun acc x y -> acc + (x * y)) 0 list1 list2
+
 let run () =
   let lines = read_lines "inputs/day01.txt" in
   let loc1, loc2 = location_pair_list lines in
   assert (List.length loc1 == List.length loc2);
   let distances = List.map2 (fun x y -> abs (x - y)) loc1 loc2 in
   let distance_total = List.fold_left ( + ) 0 distances in
-  Printf.printf "----------------\n";
-  Printf.printf "Total Distance: %d\n" distance_total
+  let loc1_freqs = List.map (fun x -> list_freq x loc2) loc1 in
+  let sim_score = dot_product loc1 loc1_freqs in
+  Printf.printf "Total Distance: %d\n" distance_total;
+  Printf.printf "Total Similarity Score: %d\n" sim_score
