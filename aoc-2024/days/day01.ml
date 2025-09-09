@@ -1,15 +1,3 @@
-let read_lines filename =
-  let ic = open_in filename in
-  let rec lines acc =
-    try
-      let line = input_line ic in
-      lines (line :: acc)
-    with End_of_file ->
-      close_in ic;
-      List.rev acc
-  in
-  lines []
-
 let locations lines =
   let rec loop loc1 loc2 = function
     | [] -> (loc1, loc2)
@@ -42,21 +30,13 @@ let location_pair_list lines =
   in
   (first_list, second_list)
 
-let print_list list = List.iter (fun x -> Printf.printf "%d\n" x) list
-
-let list_freq elem list =
-  list |> List.filter (fun x -> x == elem) |> List.length
-
-let dot_product list1 list2 =
-  List.fold_left2 (fun acc x y -> acc + (x * y)) 0 list1 list2
-
 let run () =
-  let lines = read_lines "inputs/day01.txt" in
+  let lines = Utils.read_lines "inputs/day01.txt" in
   let loc1, loc2 = location_pair_list lines in
   assert (List.length loc1 == List.length loc2);
   let distances = List.map2 (fun x y -> abs (x - y)) loc1 loc2 in
   let distance_total = List.fold_left ( + ) 0 distances in
-  let loc1_freqs = List.map (fun x -> list_freq x loc2) loc1 in
-  let sim_score = dot_product loc1 loc1_freqs in
+  let loc1_freqs = List.map (fun x -> Utils.list_freq x loc2) loc1 in
+  let sim_score = Utils.dot_product loc1 loc1_freqs in
   Printf.printf "Total Distance: %d\n" distance_total;
   Printf.printf "Total Similarity Score: %d\n" sim_score

@@ -1,3 +1,4 @@
 (library
  (public_name aoc-2024.days)
- (name days))
+ (name days)
+ (libraries aoc-2024.utils str re))
