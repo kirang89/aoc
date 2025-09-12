@@ -7,4 +7,5 @@ let () =
       | "1" -> Days.Day01.run ()
       | "2" -> Days.Day02.run ()
       | "3" -> Days.Day03.run ()
+      | "4" -> Days.Day04.run ()
       | _ -> raise (Invalid_argument "Unknown day value\n"))

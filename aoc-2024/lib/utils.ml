@@ -29,3 +29,10 @@ let check_while pred list =
   loop true list
 
 let list_remove_nth n list = List.take n list @ List.drop (n + 1) list
+
+let assert_equal ~expected ~actual =
+  if expected <> actual then (
+    Printf.printf "Assertion failed:\n";
+    Printf.printf "  Expected: %d\n" expected;
+    Printf.printf "  Actual: %d\n" actual;
+    failwith "Assertion failed")
