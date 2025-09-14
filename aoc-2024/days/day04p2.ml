@@ -7,9 +7,7 @@ let reverse_string string =
 let search_occurrence_forward search_string row idx =
   let length = String.length search_string in
   if idx + (length - 1) >= String.length row then false
-  else if String.sub row idx length = search_string then
-    (* Printf.printf "forward search in row %s at pos %d\n" row idx; *)
-    true
+  else if String.sub row idx length = search_string then true
   else false
 
 let search_occurrence_backward search_string row idx =
@@ -26,7 +24,6 @@ let search_occurrence_upward search_string grid row idx =
   let search_idxs = List.init (String.length search_string) (fun i -> i) in
   if row_idx - search_length < 0 then false
   else
-    (* Printf.printf "Searching upwards from row: %s idx %d\n" row row_idx; *)
     List.for_all
       (fun offset ->
         fetch_grid_elem grid (row_idx - offset) idx
@@ -39,7 +36,6 @@ let search_occurrence_downward search_string grid row idx =
   let search_idxs = List.init (String.length search_string) (fun i -> i) in
   if row_idx + search_length >= Array.length grid then false
   else
-    (* Printf.printf "Searching downwards from row: %s idx %d\n" row row_idx; *)
     List.for_all
       (fun offset ->
         fetch_grid_elem grid (row_idx + offset) idx
@@ -99,18 +95,32 @@ let search_occurrence_right_diagonal_downward search_string grid row_idx col_idx
         = String.get search_string offset)
       search_idxs
 
-let count_occurrences_from_pos search_string grid row_idx col_idx =
-  let row = Array.get grid row_idx in
-  [
-    search_occurrence_forward search_string row col_idx;
-    search_occurrence_backward search_string row col_idx;
-    search_occurrence_upward search_string grid row col_idx;
-    search_occurrence_downward search_string grid row col_idx;
-    search_occurrence_left_diagonal_upward search_string grid row_idx col_idx;
-    search_occurrence_left_diagonal_downward search_string grid row_idx col_idx;
-    search_occurrence_right_diagonal_upward search_string grid row_idx col_idx;
-    search_occurrence_right_diagonal_downward search_string grid row_idx col_idx;
-  ]
+let count_x_match search_string grid row_idx col_idx =
+  let ldu = search_occurrence_left_diagonal_upward in
+  let ldd = search_occurrence_left_diagonal_downward in
+  let rdu = search_occurrence_right_diagonal_upward in
+  let rdd = search_occurrence_right_diagonal_downward in
+  let is_ldu_match =
+    ldu search_string grid row_idx col_idx
+    && (ldd search_string grid (row_idx - 2) col_idx
+       || rdu search_string grid row_idx (col_idx - 2))
+  in
+  let is_ldd_match =
+    ldd search_string grid row_idx col_idx
+    && (rdd search_string grid row_idx (col_idx - 2)
+       || ldu search_string grid (row_idx + 2) col_idx)
+  in
+  let is_rdu_match =
+    rdu search_string grid row_idx col_idx
+    && (ldu search_string grid row_idx (col_idx + 2)
+       || rdd search_string grid (row_idx - 2) col_idx)
+  in
+  let is_rdd_match =
+    rdd search_string grid row_idx col_idx
+    && (rdu search_string grid (row_idx + 2) col_idx
+       || ldd search_string grid row_idx (col_idx + 2))
+  in
+  [ is_ldu_match; is_ldd_match; is_rdu_match; is_rdd_match ]
   |> List.filter (fun x -> x = true)
   |> List.length
 
@@ -121,9 +131,8 @@ let count_occurrences_from_row search_string grid row_idx =
     if idx >= String.length row then acc
     else if String.get row idx <> first_letter then loop acc (idx + 1)
     else
-      loop
-        (acc + count_occurrences_from_pos search_string grid row_idx idx)
-        (idx + 1)
+      let matches = count_x_match search_string grid row_idx idx in
+      if matches = 0 then loop acc (idx + 1) else loop (acc + matches) (idx + 1)
   in
   loop 0 0
 
@@ -145,13 +154,13 @@ let count_occurrences string file =
   count_occurrences_grid search_string grid
 
 let run () =
-  let search_string = "XMAS" in
+  let search_string = "MAS" in
   let count = count_occurrences search_string "inputs/day04.txt" in
-  Printf.printf "# of occurrences of %s: %d\n" search_string count
+  Printf.printf "# of x-occurrences of %s: %d\n" search_string (count / 2)
 
 let run_tests () =
   List.iter
     (fun (search_string, file, expected_count) ->
       let actual_count = count_occurrences search_string file in
       Utils.assert_equal ~expected:expected_count ~actual:actual_count)
-    [ ("XMAS", "inputs/day04ex.txt", 18); ("XMAS", "inputs/day04.txt", 2593) ]
+    [ ("MAS", "inputs/day04ex.txt", 18); ("MAS", "inputs/day04ex.txt", 2593) ]
