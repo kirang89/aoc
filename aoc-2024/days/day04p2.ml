@@ -1,166 +1,79 @@
-let fetch_grid_elem grid row col = String.get grid.(row) col
+let directions =
+  [ (0, 1); (1, 0); (1, 1); (0, -1); (-1, 0); (-1, -1); (1, -1); (-1, 1) ]
 
-let reverse_string string =
-  let len = String.length string in
-  String.init len (fun i -> String.get string (len - 1 - i))
-
-let search_occurrence_forward search_string row idx =
-  let length = String.length search_string in
-  if idx + (length - 1) >= String.length row then false
-  else if String.sub row idx length = search_string then true
-  else false
-
-let search_occurrence_backward search_string row idx =
-  let length = String.length search_string in
-  let string_rev = reverse_string search_string in
-  if idx - (length - 1) < 0 then false
-  else if String.sub row (idx - (length - 1)) length = string_rev then true
-  else false
-
-let search_occurrence_upward search_string grid row idx =
-  (* TODO: find_index won't work if there are duplicate lines *)
-  let row_idx = grid |> Array.find_index (fun l -> l = row) |> Option.get in
-  let search_length = String.length search_string - 1 in
-  let search_idxs = List.init (String.length search_string) (fun i -> i) in
-  if row_idx - search_length < 0 then false
+let grid_get_opt grid row col =
+  if row < 0 || row >= Array.length grid then None
   else
-    List.for_all
-      (fun offset ->
-        fetch_grid_elem grid (row_idx - offset) idx
-        = String.get search_string offset)
-      search_idxs
+    let row_val = Array.get grid row in
+    if col < 0 || col >= String.length row_val then None
+    else Some (String.get row_val col)
 
-let search_occurrence_downward search_string grid row idx =
-  let row_idx = grid |> Array.find_index (fun l -> l = row) |> Option.get in
-  let search_length = String.length search_string - 1 in
-  let search_idxs = List.init (String.length search_string) (fun i -> i) in
-  if row_idx + search_length >= Array.length grid then false
-  else
-    List.for_all
-      (fun offset ->
-        fetch_grid_elem grid (row_idx + offset) idx
-        = String.get search_string offset)
-      search_idxs
+let rec match_direction grid word row col dx dy =
+  match word with
+  | [] -> true
+  | x :: xs -> (
+      match grid_get_opt grid row col with
+      | Some e when e = x -> match_direction grid xs (row + dx) (col + dy) dx dy
+      | _ -> false)
 
-let search_occurrence_left_diagonal_upward search_string grid row_idx col_idx =
-  let search_length = String.length search_string - 1 in
-  let search_idxs = List.init (String.length search_string) (fun i -> i) in
-  if row_idx - search_length < 0 || col_idx - search_length < 0 then false
-  else
-    List.for_all
-      (fun offset ->
-        fetch_grid_elem grid (row_idx - offset) (col_idx - offset)
-        = String.get search_string offset)
-      search_idxs
+let search_directions grid word row col directions =
+  let word_list = word |> String.to_seq |> List.of_seq in
+  directions
+  |> List.map (fun (dx, dy) ->
+         if match_direction grid word_list row col dx dy then 1 else 0)
+  |> List.fold_left ( + ) 0
 
-let search_occurrence_left_diagonal_downward search_string grid row_idx col_idx
-    =
-  let search_length = String.length search_string - 1 in
-  let search_idxs = List.init (String.length search_string) (fun i -> i) in
-  let grid_len = Array.length grid in
-  if row_idx + search_length >= grid_len || col_idx - search_length < 0 then
-    false
-  else
-    List.for_all
-      (fun offset ->
-        fetch_grid_elem grid (row_idx + offset) (col_idx - offset)
-        = String.get search_string offset)
-      search_idxs
-
-let search_occurrence_right_diagonal_upward search_string grid row_idx col_idx =
-  let search_length = String.length search_string - 1 in
-  let search_idxs = List.init (String.length search_string) (fun i -> i) in
-  let row_len = row_idx |> Array.get grid |> String.length in
-  if row_idx - search_length < 0 || col_idx + search_length >= row_len then
-    false
-  else
-    List.for_all
-      (fun offset ->
-        fetch_grid_elem grid (row_idx - offset) (col_idx + offset)
-        = String.get search_string offset)
-      search_idxs
-
-let search_occurrence_right_diagonal_downward search_string grid row_idx col_idx
-    =
-  let search_length = String.length search_string - 1 in
-  let search_idxs = List.init (String.length search_string) (fun i -> i) in
-  let grid_len = Array.length grid in
-  let row_len = row_idx |> Array.get grid |> String.length in
-  if row_idx + search_length >= grid_len || col_idx + search_length >= row_len
-  then false
-  else
-    List.for_all
-      (fun offset ->
-        fetch_grid_elem grid (row_idx + offset) (col_idx + offset)
-        = String.get search_string offset)
-      search_idxs
-
-let count_x_match search_string grid row_idx col_idx =
-  let ldu = search_occurrence_left_diagonal_upward in
-  let ldd = search_occurrence_left_diagonal_downward in
-  let rdu = search_occurrence_right_diagonal_upward in
-  let rdd = search_occurrence_right_diagonal_downward in
-  let is_ldu_match =
-    ldu search_string grid row_idx col_idx
-    && (ldd search_string grid (row_idx - 2) col_idx
-       || rdu search_string grid row_idx (col_idx - 2))
-  in
-  let is_ldd_match =
-    ldd search_string grid row_idx col_idx
-    && (rdd search_string grid row_idx (col_idx - 2)
-       || ldu search_string grid (row_idx + 2) col_idx)
-  in
-  let is_rdu_match =
-    rdu search_string grid row_idx col_idx
-    && (ldu search_string grid row_idx (col_idx + 2)
-       || rdd search_string grid (row_idx - 2) col_idx)
-  in
-  let is_rdd_match =
-    rdd search_string grid row_idx col_idx
-    && (rdu search_string grid (row_idx + 2) col_idx
-       || ldd search_string grid row_idx (col_idx + 2))
-  in
-  [ is_ldu_match; is_ldd_match; is_rdu_match; is_rdd_match ]
-  |> List.filter (fun x -> x = true)
+let search_x_directions grid word row col =
+  let rdd = (1, 1) in
+  let ldd = (1, -1) in
+  let rdu = (-1, 1) in
+  let ldu = (-1, -1) in
+  [
+    search_directions grid word row col [ rdd ]
+    + search_directions grid word row (col + 2) [ ldd ]
+    + search_directions grid word (row + 2) col [ rdu ];
+    search_directions grid word row col [ ldd ]
+    + search_directions grid word row (col - 2) [ rdd ]
+    + search_directions grid word (row + 2) col [ ldu ];
+    search_directions grid word row col [ rdu ]
+    + search_directions grid word row (col + 2) [ ldu ]
+    + search_directions grid word (row - 2) col [ rdd ];
+    search_directions grid word row col [ ldu ]
+    + search_directions grid word row (col - 2) [ rdu ]
+    + search_directions grid word (row - 2) col [ ldd ];
+  ]
+  |> (fun x ->
+  Printf.printf "Row %d Column %d matches: %s and count: %d\n" row col
+    (String.concat " " (List.map string_of_int x))
+    (x |> List.filter (fun x -> x = 2) |> List.length);
+  x)
+  |> List.filter (fun x -> x = 2)
   |> List.length
 
-let count_occurrences_from_row search_string grid row_idx =
-  let row = Array.get grid row_idx in
-  let first_letter = String.get search_string 0 |> Char.uppercase_ascii in
-  let rec loop acc idx =
-    if idx >= String.length row then acc
-    else if String.get row idx <> first_letter then loop acc (idx + 1)
-    else
-      let matches = count_x_match search_string grid row_idx idx in
-      if matches = 0 then loop acc (idx + 1) else loop (acc + matches) (idx + 1)
-  in
-  loop 0 0
+let count_row_occurrences grid word row =
+  Array.get grid row |> String.to_seq |> List.of_seq
+  |> List.mapi (fun col _ -> search_x_directions grid word row col)
+  |> List.fold_left ( + ) 0
 
-let count_occurrences_grid search_string grid =
-  let first_letter = String.get search_string 0 |> Char.uppercase_ascii in
+let count_occurrences grid word =
+  let first_letter = String.get word 0 in
   Array.mapi
     (fun idx row ->
       if not (String.contains row first_letter) then 0
-      else
-        let c = count_occurrences_from_row search_string grid idx in
-        c)
+      else count_row_occurrences grid word idx)
     grid
   |> Array.fold_left ( + ) 0
 
-let count_occurrences string file =
-  let data = Utils.read_lines file in
-  let grid = Array.of_list data in
-  let search_string = string in
-  count_occurrences_grid search_string grid
-
 let run () =
-  let search_string = "MAS" in
-  let count = count_occurrences search_string "inputs/day04.txt" in
-  Printf.printf "# of x-occurrences of %s: %d\n" search_string (count / 2)
+  let word = "MAS" in
+  let grid = Utils.read_lines "inputs/day04.txt" |> Array.of_list in
+  let count = count_occurrences grid word in
+  Printf.printf "# of occurrences of %s: %d\n" word count
 
 let run_tests () =
   List.iter
-    (fun (search_string, file, expected_count) ->
-      let actual_count = count_occurrences search_string file in
+    (fun (word, file, expected_count) ->
+      let grid = Utils.read_lines file |> Array.of_list in
+      let actual_count = count_occurrences grid word in
       Utils.assert_equal ~expected:expected_count ~actual:actual_count)
-    [ ("MAS", "inputs/day04ex.txt", 18); ("MAS", "inputs/day04ex.txt", 2593) ]
+    [ ("XMAS", "inputs/day04ex.txt", 18); ("XMAS", "inputs/day04.txt", 2593) ]
