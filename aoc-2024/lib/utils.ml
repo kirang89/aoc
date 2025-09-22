@@ -10,7 +10,8 @@ let read_lines filename =
   in
   lines []
 
-let print_list list = List.iter (fun x -> Printf.printf "%d\n" x) list
+let print_list formatter list =
+  List.iter (fun x -> Printf.printf "%s\n" (formatter x)) list
 
 let list_freq elem list =
   list |> List.filter (fun x -> x == elem) |> List.length

@@ -1,4 +1,5 @@
 (library
  (public_name aoc-2024.days)
  (name days)
- (libraries aoc-2024.utils str re))
+ (libraries aoc-2024.utils str re)
+ (flags (:standard -g)))
