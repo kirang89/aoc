@@ -11,4 +11,5 @@ let () =
       | "4p2" -> Days.Day04p2.run ()
       | "5p1" -> Days.Day05p1.run ()
       | "5p2" -> Days.Day05p2.run ()
+      | "6" -> Days.Day06.run ()
       | _ -> raise (Invalid_argument "Unknown day value\n"))
